@@ -65,6 +65,9 @@ public class Game {
     }
 
     public synchronized boolean legalMove(int location, Player player) {
+        if( !(location >= 0 && location<=8) )
+            return false;
+
         if (player == currentPlayer && board[location] == null) {
             board[location] = currentPlayer;
             currentPlayer = currentPlayer.getOther();

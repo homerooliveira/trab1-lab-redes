@@ -48,7 +48,7 @@ public class Client {
     private static boolean WantToPlay() {
         Scanner keyboard = new Scanner(System.in);
         while (true) {
-            System.out.println("Do you want to play again?\n 1 - yes\n  - or -\n 2 - no");
+            System.out.println("Do you want to play?\n 1 - yes\n  - or -\n 2 - no");
             String input = keyboard.next();
             switch (input.trim().charAt(0)){
                 case '1':
@@ -85,19 +85,21 @@ public class Client {
 
         while (true){
             response = in.readLine();
-            if(response.length() <= 4) continue;
+            if(response.length() < 4) continue;
             code = response.substring(0, 4);
-            rest = response.substring(4);
-
+            rest = response.substring(4); // might be null
+            System.out.println(code);
             switch (code){
                 case GameConstants.VALID_MOOVE:
                     this.board[this.lastPlay] = this.playerType;
                     System.out.println("Wait for the other player`s turn");
+                    printBoard();
                     break;
 
                 case GameConstants.INVALID_MOOVE:
                     System.out.println("Are you trying to fool me? Try it again...");
                     System.out.println("Your Turn!");
+                    printBoard();
                     myTurn();
                     break;
 
@@ -105,23 +107,31 @@ public class Client {
                     int i = Integer.parseInt(rest.trim());
                     this.board[i] = this.otherPlayerType;
                     System.out.println("The other player moved");
-                    System.out.println("Your Turn!");
+                    printBoard();
+                    break;
+
+                case GameConstants.YOUR_TURN:
+                    System.out.println(rest);
+                    printBoard();
                     myTurn();
                     break;
 
                 case GameConstants.YOU_WIN:
                     System.out.println("YOU WIN");
                     endGame = true;
+                    printBoard();
                     break;
 
                 case GameConstants.YOU_LOOSE:
                     System.out.println("YOU LOOSE");
                     endGame = true;
+                    printBoard();
                     break;
 
                 case GameConstants.YOU_TIE:
                     System.out.println("BORRING... It`s a Tie...");
                     endGame = true;
+                    printBoard();
                     break;
 
                 case GameConstants.MESSAGE:
@@ -137,11 +147,12 @@ public class Client {
     private void myTurn() {
         int play;
         while (true) {
-            System.out.println("Do you want to play?\n 1 - yes\n 2 - no");
+            System.out.println("Press 1 - 9");
             String input = keyboard.next();
             try {
                 play = Integer.parseInt(""+input.trim().charAt(0));
-                if(play >=0 && play <=9){
+                if(play >=1 && play <=9){
+                    play = play - 1;
                     out.println(GameConstants.MOVE+play);
                     this.lastPlay = play;
                     break;
@@ -155,8 +166,9 @@ public class Client {
     // AUX
     public void printBoard(){
         for (int i = 0; i < board.length; i++) {
-            if(i == 3) System.out.print("\n");
-            System.out.println(board[i]);
+            if(i % 3 == 0) System.out.print("\n");
+            System.out.print(" "+board[i]);
         }
+        System.out.println();
     }
 }

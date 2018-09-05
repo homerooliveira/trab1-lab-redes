@@ -21,6 +21,7 @@ public class Player extends Thread {
     public Player(Socket skt, boolean x, Game game){
         this.socket = skt;
         this.x = x;
+        this.game = game;
         try {
             input = new BufferedReader(
                     new InputStreamReader(socket.getInputStream()));
@@ -56,12 +57,18 @@ public class Player extends Thread {
 
         switch (this.result.getEnumResult()){
             case proceed:
+                System.out.println("output: other_moved");
                 output.println(GameConstants.OTHER_MOVED + position);
+                output.println(GameConstants.YOUR_TURN+"Your Turn");
                 break;
             case win:
+                System.out.println("output: you_loose");
+                output.println(GameConstants.OTHER_MOVED + position);
                 output.println(GameConstants.YOU_LOOSE);
                 break;
             case tie:
+                System.out.println("output: you_tie");
+                output.println(GameConstants.OTHER_MOVED + position);
                 output.println(GameConstants.YOU_TIE);
                 break;
         }
@@ -73,7 +80,9 @@ public class Player extends Thread {
             output.println(GameConstants.MESSAGE+"The Game is about to start...");
 
             if(this.x)
-                output.println(GameConstants.MESSAGE+"It is your turn, move!");
+                output.println(GameConstants.YOUR_TURN+"You are the X`s. It is your turn, move!");
+            else
+                output.println(GameConstants.MESSAGE+"You are the O`s. Wait for the other player`s turn...");
 
             String action;
             int move;
@@ -84,18 +93,24 @@ public class Player extends Thread {
                 if(action.startsWith(GameConstants.MOVE)) {
                     move = Integer.parseInt(action.substring(4));
                     if(game.legalMove(move, this)){
-                        switch (this.result.getEnumResult()){
+                        switch (game.result.getEnumResult()){
                             case proceed:
+                                System.out.println("output: valid_moove");
                                 output.println(GameConstants.VALID_MOOVE);
                                 break;
                             case win:
+                                System.out.println("output: you_win");
+                                output.println(GameConstants.VALID_MOOVE);
                                 output.println(GameConstants.YOU_WIN);
                                 break;
                             case tie:
+                                System.out.println("output: you_tie");
+                                output.println(GameConstants.VALID_MOOVE);
                                 output.println(GameConstants.YOU_TIE);
                                 break;
                         }
                     } else {
+                        System.out.println("output: invalid_moove");
                         output.println(GameConstants.INVALID_MOOVE + "Invalid Move!");
                     }
 

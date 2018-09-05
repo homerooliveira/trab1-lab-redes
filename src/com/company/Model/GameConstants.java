@@ -9,4 +9,5 @@ public class GameConstants {
     public static final String YOU_TIE = "0006";
     public static final String MESSAGE = "0007";
     public static final String MOVE = "0008";
+    public static final String YOUR_TURN = "0009";
 }
