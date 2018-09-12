@@ -28,9 +28,7 @@ public class GameManager {
         controller();
         cleanner();
         while (true){
-            System.out.println("here");
             Socket _socket = socket.accept();
-            System.out.println("here");
             Player player = new Player( _socket);
             players.put(_socket.getRemoteSocketAddress(),player);
         }
@@ -38,8 +36,12 @@ public class GameManager {
     private static void cleanner(){
         System.out.println("setting up Cleaner");
         new Thread(()->{
-            while (true)
+            while (true) {
                 checkForLostConnections();
+                try { // Reduzindo o uso de CPU
+                    Thread.sleep(1000);
+                } catch (Exception e){}
+            }
         }).start();
         System.out.println("Server Cleaner set up");
     }
@@ -58,7 +60,7 @@ public class GameManager {
                 Player player = players.get(socketAddress);
                 if(!player.getSocket().isConnected()){
                     try {
-                        Disconect(socketAddress);
+                        _disconnect(socketAddress);
                     } catch (Exception e){}
                 }
         }
@@ -84,17 +86,17 @@ public class GameManager {
                         break;
 
                     case GameConstants.EXIT:
-                        player.getSocket().close();
-                        players.remove(socketAddress);
+                        _disconnect(socketAddress);
                         break;
                 }
             } catch (Exception e){
-                Disconect(socketAddress);
+                // TODO Meio dura a aćao... poderia alterar, nao é necessário
+                _disconnect(socketAddress);
             }
         }
     }
 
-    private static void Disconect(SocketAddress socketAddress) {
+    private static void _disconnect(SocketAddress socketAddress) {
         Player player = players.remove(socketAddress);
         System.out.println("DISCONNECTED: "+ socketAddress);
         try {
