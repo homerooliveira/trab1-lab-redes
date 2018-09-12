@@ -48,7 +48,10 @@ public class Client {
     }
 
     private void browseGames() {
+        System.out.println("TESTING");
+        out.println("TESTING");
         while (true){
+
             // TODO implementar
         }
     }

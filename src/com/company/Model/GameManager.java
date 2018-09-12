@@ -25,29 +25,43 @@ public class GameManager {
 
         System.out.println("The server is running at "+ port);
 
+        controller();
+        cleanner();
         while (true){
             System.out.println("here");
             Socket _socket = socket.accept();
             System.out.println("here");
             Player player = new Player( _socket);
             players.put(_socket.getRemoteSocketAddress(),player);
-            checkForActions();
-            checkForLostConnections();
         }
+    }
+    private static void cleanner(){
+        System.out.println("setting up Cleaner");
+        new Thread(()->{
+            while (true)
+                checkForLostConnections();
+        }).start();
+        System.out.println("Server Cleaner set up");
+    }
+
+    private static void controller(){
+        System.out.println("setting up Controller");
+        new Thread(()->{
+            while (true)
+                checkForActions();
+        }).start();
+        System.out.println("Controller set up");
     }
 
     private static void checkForLostConnections() {
         for (SocketAddress socketAddress : players.keySet()) {
-            new Thread(() -> {
                 Player player = players.get(socketAddress);
                 if(!player.getSocket().isConnected()){
                     try {
-
+                        Disconect(socketAddress);
                     } catch (Exception e){}
                 }
-            }).run();
         }
-
     }
 
     private static void checkForActions() {
@@ -82,9 +96,12 @@ public class GameManager {
 
     private static void Disconect(SocketAddress socketAddress) {
         Player player = players.remove(socketAddress);
+        System.out.println("DISCONNECTED: "+ socketAddress);
         try {
             player.getSocket().close();
-        } catch (IOException e) {}
+        } catch (IOException e) {
+            System.out.println("Exception close");
+        }
     }
 
     private static void createGame(SocketAddress socketAddress) {
