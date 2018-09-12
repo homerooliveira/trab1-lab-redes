@@ -1,7 +1,5 @@
 package com.company.Model;
 
-import sun.invoke.empty.Empty;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -17,24 +15,48 @@ public class Player extends Thread {
     BufferedReader input;
     PrintWriter output;
 
-
-    public Player(Socket skt, boolean x, Game game){
+    public Player(Socket skt){
         this.socket = skt;
-        this.x = x;
-        this.game = game;
+        this.x = null;
+        this.game = null;
+
         try {
             input = new BufferedReader(
                     new InputStreamReader(socket.getInputStream()));
             output = new PrintWriter(socket.getOutputStream(), true);
-            output.println("WELCOME " + getMark() );
-            output.println(GameConstants.MESSAGE+"Waiting for opponent...");
+            output.println("WELCOME ");
         } catch (Exception e) {
             System.out.println("Player died: " + e);
-            output.println(GameConstants.MESSAGE+"The Other player left the game");
+            output.println(GameConstants.MESSAGE+"ops, something went wrong!");
         }
 
     }
 
+    public void startingGame(Game game) {
+        this._ActionGame(game, false);
+    }
+    public void joiningGame(Game game) {
+        this._ActionGame(game, false);
+    }
+    private void _ActionGame(Game game, Boolean x) {
+        this.game = game;
+        this.x = x;
+
+        if(x) this.game.playerX = this;
+        else  this.game.playerY = this;
+    }
+
+    public Socket getSocket() {
+        return socket;
+    }
+
+    public BufferedReader getInput() {
+        return input;
+    }
+
+    public PrintWriter getOutput() {
+        return output;
+    }
 
     public Player getOther(){
         return this.other;

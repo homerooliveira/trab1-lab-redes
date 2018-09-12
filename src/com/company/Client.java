@@ -29,19 +29,27 @@ public class Client {
 
 
     public static void main(String args[]){
+        String server = "localhost";
+
         while (true){
-            String server = "localhost";
             try {
                 if(!WantToPlay()) {
                     System.out.println("GOOD BYE...\nSee you later alligator");
                     break;
                 }
                 Client client = new Client(server);
+                client.browseGames();
                 client.play();
             } catch (Exception e){
                 System.out.println("Connection Problem");
             }
 
+        }
+    }
+
+    private void browseGames() {
+        while (true){
+            // TODO implementar
         }
     }
 
@@ -63,6 +71,7 @@ public class Client {
     }
 
 
+
     public Client(String server) throws IOException {
         this.socket = new Socket(server, this.port);
         in = new BufferedReader(new InputStreamReader(
@@ -74,6 +83,7 @@ public class Client {
 
 
     public void play() throws IOException {
+
         String response = in.readLine();
         String code;
         String rest;

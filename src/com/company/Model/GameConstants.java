@@ -10,4 +10,10 @@ public class GameConstants {
     public static final String MESSAGE = "0007";
     public static final String MOVE = "0008";
     public static final String YOUR_TURN = "0009";
+
+    public static final String EXIT = "0010";
+    public static final String CREATE_GAME = "0011";
+    public static final String JOIN_GAME = "0012";
+
+    public static final String LIST_GAME = "0013";
 }
