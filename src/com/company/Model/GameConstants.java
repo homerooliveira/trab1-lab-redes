@@ -16,4 +16,10 @@ public class GameConstants {
     public static final String JOIN_GAME = "0012";
 
     public static final String LIST_GAME = "0013";
+
+    public static final String CREATE_GAME_OK = "0014";
+    public static final String JOIN_GAME_OK = "0015";
+
+    public static final String CREATE_GAME_ERROR = "0016";
+    public static final String JOIN_GAME_ERROR = "0017";
 }

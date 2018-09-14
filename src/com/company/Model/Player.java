@@ -35,8 +35,10 @@ public class Player extends Thread {
     public void startingGame(Game game) {
         this._ActionGame(game, false);
     }
-    public void joiningGame(Game game) {
+    public boolean joiningGame(Game game) {
+        if(game.playerY != null) return false;
         this._ActionGame(game, false);
+        return true;
     }
     private void _ActionGame(Game game, Boolean x) {
         this.game = game;

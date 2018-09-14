@@ -77,12 +77,18 @@ public class GameManager {
                 switch (action) {
                     case GameConstants.CREATE_GAME:
                         name = response.substring(4);
-                        createGame(socketAddress);
+                        if(createGame(socketAddress))
+                            player.getOutput().print(GameConstants.CREATE_GAME_OK);
+                        else
+                            player.getOutput().print(GameConstants.CREATE_GAME_ERROR);
                         break;
 
                     case GameConstants.JOIN_GAME:
                         name = response.substring(4);
-                        joinGame(socketAddress);
+                        if(joinGame(socketAddress))
+                            player.getOutput().print(GameConstants.JOIN_GAME_OK);
+                        else
+                            player.getOutput().print(GameConstants.JOIN_GAME_ERROR);
                         break;
 
                     case GameConstants.EXIT:
@@ -105,7 +111,7 @@ public class GameManager {
         }
     }
 
-    private static void createGame(SocketAddress socketAddress) {
+    private static boolean createGame(SocketAddress socketAddress) {
         if(!games.containsKey(games)) {
             Game game = new Game();
             games.put(name, game);
@@ -116,18 +122,23 @@ public class GameManager {
             game.setCurrentPlayer(player);
 
             broadcastPlayers(GameConstants.LIST_GAME+getGamesJson());
+            return true;
+        } else {
+            return false;
         }
     }
 
-    private static void joinGame(SocketAddress socketAddress) {
+    private static boolean joinGame(SocketAddress socketAddress) {
         Game game = games.remove(name);
         if(game != null){
             player = players.remove(socketAddress);
-            player.joiningGame(game);
+            if(player.joiningGame(game)) return false;
             player.start();
 
             broadcastPlayers(GameConstants.LIST_GAME+getGamesJson());
+            return true;
         }
+        return false;
     }
 
     private static String getGamesJson(){

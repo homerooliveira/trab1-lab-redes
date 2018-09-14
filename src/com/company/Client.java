@@ -1,15 +1,20 @@
 package com.company;
 
 import com.company.Model.GameConstants;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Scanner;
-
-
+import java.util.Set;
+import java.util.concurrent.Future;
 
 
 public class Client {
@@ -24,8 +29,12 @@ public class Client {
     private BufferedReader in;
     private PrintWriter out;
     Scanner keyboard = new Scanner(System.in);
+    boolean ok = false;
 
     private boolean shoudListenServer = false;
+
+    Gson gson = new Gson();
+    JsonParser jsonParser= new JsonParser();
 
 
     public static void main(String args[]){
@@ -47,11 +56,12 @@ public class Client {
         }
     }
 
-    private void browseGames() {
+    private void browseGames() throws IOException {
         System.out.println("TESTING");
         out.println("Connected");
         shoudListenServer = true;
-        boolean ok = false;
+
+        ok = false;
 
         Thread inputListenner = new Thread(()->{
             String opt = "";
@@ -67,19 +77,59 @@ public class Client {
                     case "1": // Enter an existing game
                         System.out.println("Which match do you want to join?");
                         opt = keyboard.next().trim();
+                        out.print(GameConstants.CREATE_GAME + opt);
                         break;
                     case "2": // Create a game
                         System.out.println("Choose the name of the match?");
                         opt = keyboard.next().trim();
+                        out.print(GameConstants.JOIN_GAME + opt);
                         break;
                 }
-            } while (!ok);
+                try {
+                    synchronized (this){
+                        wait(100000000);
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }while (!ok);
         });
         inputListenner.start();
-        while (true){
+        String serverMsg, message, code;
 
-            if(!shoudListenServer) break;
-        }
+        do {
+            serverMsg= in.readLine();
+            if(serverMsg.length() <3) continue;
+            code = serverMsg.substring(0,4);
+            switch (code){
+                case GameConstants.CREATE_GAME_OK:
+                    System.out.println("GAME CREATED");
+                    ok = true;
+                    break;
+                case GameConstants.CREATE_GAME_ERROR:
+                    System.out.println("ERROR try again");
+                    break;
+                case GameConstants.JOIN_GAME_OK:
+                    System.out.println("JOINED GAME");
+                    ok = true;
+                    break;
+                case GameConstants.JOIN_GAME_ERROR:
+                    System.out.println("ERROR try again");
+                    break;
+                case GameConstants.LIST_GAME:
+                    message = serverMsg.substring(4);
+                    JsonObject jsonObject = jsonParser.parse(message).getAsJsonObject();
+                    Set<String> set = jsonObject.keySet();
+                    System.out.println("-> SALAS DISPONÍVEIS:");
+                    for (String k: set) {
+                        System.out.println(k);
+                    }
+                    break;
+            }
+            synchronized (this){
+                notify();
+            }
+        } while (shoudListenServer);
         try {
             inputListenner.join();
         } catch (InterruptedException e) {}
