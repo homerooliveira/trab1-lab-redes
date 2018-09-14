@@ -90,7 +90,6 @@ public class GameManager {
                         break;
                 }
             } catch (Exception e){
-                // TODO Meio dura a aćao... poderia alterar, nao é necessário
                 _disconnect(socketAddress);
             }
         }

@@ -25,7 +25,7 @@ public class Client {
     private PrintWriter out;
     Scanner keyboard = new Scanner(System.in);
 
-
+    private boolean shoudListenServer = false;
 
 
     public static void main(String args[]){
@@ -49,11 +49,45 @@ public class Client {
 
     private void browseGames() {
         System.out.println("TESTING");
-        out.println("TESTING");
+        out.println("Connected");
+        shoudListenServer = true;
+        boolean ok = false;
+
+        Thread inputListenner = new Thread(()->{
+            String opt = "";
+            do {
+                do {
+                    System.out.println("Do you want to enter a existing game? press 1 - yes\n" +
+                            "Else if you want to create a game press 2");
+                    opt = keyboard.next().trim();
+
+                } while (opt != "1" || opt != "2");
+                shoudListenServer = false;
+                switch (opt) {
+                    case "1": // Enter an existing game
+                        System.out.println("Which match do you want to join?");
+                        opt = keyboard.next().trim();
+                        break;
+                    case "2": // Create a game
+                        System.out.println("Choose the name of the match?");
+                        opt = keyboard.next().trim();
+                        break;
+                }
+            } while (!ok);
+        });
+        inputListenner.start();
         while (true){
 
-            // TODO implementar
+            if(!shoudListenServer) break;
         }
+        try {
+            inputListenner.join();
+        } catch (InterruptedException e) {}
+
+    }
+
+    private void listenToServer(){
+
     }
 
     private static boolean WantToPlay() {
