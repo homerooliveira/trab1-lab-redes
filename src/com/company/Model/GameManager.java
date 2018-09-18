@@ -77,7 +77,8 @@ public class GameManager {
             Player player = players.remove(socketAddress);
             player.startingGame(game);
             game.setCurrentPlayer(player);
-            player.getOutput().println(GameConstants.OK+"GAME CREATED, WAITING OTHER PLAYER");
+//            System.out.println(GameConstants.OK+"GAME CREATED, WAITING OTHER PLAYER");
+//            player.getOutput().println(GameConstants.OK+"GAME CREATED, WAITING OTHER PLAYER");
             broadcastPlayers(GameConstants.LIST_GAME+getGamesJson());
             return true;
         } else {
@@ -95,7 +96,7 @@ public class GameManager {
 
             player.notifyStart();
             game.playerX.notifyStart();
-            player.getOutput().println(GameConstants.OK+"JOINED GAME");
+            //player.getOutput().println(GameConstants.OK+"JOINED GAME");
             broadcastPlayers(GameConstants.LIST_GAME+getGamesJson());
             return true;
         }

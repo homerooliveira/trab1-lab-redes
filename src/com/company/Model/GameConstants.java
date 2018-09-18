@@ -25,4 +25,5 @@ public class GameConstants {
 
     public static final String CREATE_GAME_ERROR = "0016";
     public static final String JOIN_GAME_ERROR = "0017";
+
 }

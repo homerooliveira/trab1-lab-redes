@@ -2,7 +2,6 @@ package com.company;
 
 import com.company.Model.GameConstants;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import java.io.BufferedReader;
@@ -10,38 +9,35 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Scanner;
-import java.util.Set;
-import java.util.concurrent.Future;
 
 
 public class Client {
-    public char [] board;
+    boolean debug = false;
 
-    public char playerType;
-    public char otherPlayerType;
+    private char [] board;
+
+    private char playerType;
+    private char otherPlayerType;
 
     int lastPlay;
-    public final int port = 9000;
-    public Socket socket;
+    private final int port = 9000;
+
+    private Socket socket;
     private BufferedReader in;
     private PrintWriter out;
     Scanner keyboard = new Scanner(System.in);
     boolean ok = false;
 
-    private boolean shoudListenServer = false;
+    private boolean shouldListenServer = false;
 
     Gson gson = new Gson();
-    JsonParser jsonParser= new JsonParser();
-
 
     public static void main(String args[]){
         String server = "localhost";
+        try {
+            while (true){
 
-        while (true){
-            try {
                 if(!WantToPlay()) {
                     System.out.println("GOOD BYE...\nSee you later alligator");
                     break;
@@ -49,62 +45,62 @@ public class Client {
                 Client client = new Client(server);
                 client.browseGames();
                 client.play();
-            } catch (Exception e){
-                System.out.println("Connection Problem");
             }
-
+        } catch (Exception e){
+            e.printStackTrace();
+            System.out.println("Connection Problem");
         }
+
     }
 
     private void browseGames() throws IOException {
-        System.out.println("TESTING");
-        out.println("Connected");
-        shoudListenServer = true;
 
+        shouldListenServer = true;
         ok = false;
-
-        Thread inputListenner = new Thread(()->{
-            String opt = "";
+        Thread inputListener = new Thread(()->{
+            String opt;
             do {
                 do {
                     System.out.println("Do you want to enter a existing game? press 1 - yes\n" +
                             "Else if you want to create a game press 2");
                     opt = keyboard.next().trim();
 
-                } while (opt != "1" || opt != "2");
-                shoudListenServer = false;
+                } while (!opt.equals("1")  && !opt.equals("2"));
                 switch (opt) {
                     case "1": // Enter an existing game
                         System.out.println("Which match do you want to join?");
                         opt = keyboard.next().trim();
-                        out.print(GameConstants.CREATE_GAME + opt);
+                        out.println(GameConstants.JOIN_GAME + opt);
                         break;
                     case "2": // Create a game
                         System.out.println("Choose the name of the match?");
                         opt = keyboard.next().trim();
-                        out.print(GameConstants.JOIN_GAME + opt);
+                        out.println(GameConstants.CREATE_GAME + opt);
                         break;
                 }
                 try {
                     synchronized (this){
-                        wait(100000000);
+                        wait(100000);
                     }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }while (!ok);
         });
-        inputListenner.start();
+        inputListener.start();
         String serverMsg, message, code;
 
         do {
             serverMsg= in.readLine();
+            print("listening " + serverMsg);
             if(serverMsg.length() <3) continue;
             code = serverMsg.substring(0,4);
             switch (code){
                 case GameConstants.CREATE_GAME_OK:
                     System.out.println("GAME CREATED");
                     ok = true;
+                    this.setPlayerType('X');
+                    shouldListenServer = false;
                     break;
                 case GameConstants.CREATE_GAME_ERROR:
                     System.out.println("ERROR try again");
@@ -112,16 +108,17 @@ public class Client {
                 case GameConstants.JOIN_GAME_OK:
                     System.out.println("JOINED GAME");
                     ok = true;
+                    this.setPlayerType('O');
+                    shouldListenServer = false;
                     break;
                 case GameConstants.JOIN_GAME_ERROR:
                     System.out.println("ERROR try again");
                     break;
                 case GameConstants.LIST_GAME:
                     message = serverMsg.substring(4);
-                    JsonObject jsonObject = jsonParser.parse(message).getAsJsonObject();
-                    Set<String> set = jsonObject.keySet();
+                    String[] matchs = gson.fromJson(message, String[].class);
                     System.out.println("-> SALAS DISPONÍVEIS:");
-                    for (String k: set) {
+                    for (String k: matchs) {
                         System.out.println(k);
                     }
                     break;
@@ -129,11 +126,21 @@ public class Client {
             synchronized (this){
                 notify();
             }
-        } while (shoudListenServer);
+        } while (shouldListenServer);
         try {
-            inputListenner.join();
-        } catch (InterruptedException e) {}
+            inputListener.join();
+        } catch (InterruptedException ignored) {}
 
+    }
+
+    private void setPlayerType(char type) {
+        this.playerType = type;
+        this.otherPlayerType = type =='X' ? 'O' : 'X';
+    }
+
+    private void print(String serverMsg) {
+        if(debug == true)
+            System.out.println("* DEBUG | " + serverMsg);
     }
 
     private void listenToServer(){
@@ -150,8 +157,8 @@ public class Client {
                     return true;
                 case '2':
                     return false;
-                    default:
-                        System.out.println("Error");
+                default:
+                    System.out.println("Error");
             }
         }
 
@@ -182,12 +189,14 @@ public class Client {
 
         while (true){
             response = in.readLine();
+            print("play "+response);
             if(response.length() < 4) continue;
             code = response.substring(0, 4);
             rest = response.substring(4); // might be null
             System.out.println(code);
             switch (code){
                 case GameConstants.VALID_MOOVE:
+                    print("I moved "+lastPlay + " " + this.playerType);
                     this.board[this.lastPlay] = this.playerType;
                     System.out.println("Wait for the other player`s turn");
                     printBoard();
@@ -202,9 +211,9 @@ public class Client {
 
                 case GameConstants.OTHER_MOVED:
                     int i = Integer.parseInt(rest.trim());
+                    print("OTHER moved "+i);
                     this.board[i] = this.otherPlayerType;
                     System.out.println("The other player moved");
-                    printBoard();
                     break;
 
                 case GameConstants.YOUR_TURN:
@@ -262,9 +271,18 @@ public class Client {
 
     // AUX
     public void printBoard(){
+        if(debug) {
+            String s = String.valueOf(board);
+            print(s);
+        }
+
         for (int i = 0; i < board.length; i++) {
             if(i % 3 == 0) System.out.print("\n");
-            System.out.print(" "+board[i]);
+            if(board[i] != '\u0000')
+                System.out.print(" "+board[i]);
+            else
+                System.out.print(" " + (i+1));
+
         }
         System.out.println();
     }

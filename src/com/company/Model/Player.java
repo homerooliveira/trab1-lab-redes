@@ -163,17 +163,17 @@ public class Player extends Thread {
                     case GameConstants.CREATE_GAME:
                         name = response.substring(4);
                         if (GameManager.createGame(this.getSocketAddress(), name))
-                            this.getOutput().print(GameConstants.CREATE_GAME_OK);
+                            this.getOutput().println(GameConstants.CREATE_GAME_OK);
                         else
-                            this.getOutput().print(GameConstants.CREATE_GAME_ERROR);
+                            this.getOutput().println(GameConstants.CREATE_GAME_ERROR);
                         break;
 
                     case GameConstants.JOIN_GAME:
                         name = response.substring(4);
                         if (GameManager.joinGame(this.getSocketAddress(), name))
-                            this.getOutput().print(GameConstants.JOIN_GAME_OK);
+                            this.getOutput().println(GameConstants.JOIN_GAME_OK);
                         else
-                            this.getOutput().print(GameConstants.JOIN_GAME_ERROR);
+                            this.getOutput().println(GameConstants.JOIN_GAME_ERROR);
                         break;
 
                     case GameConstants.EXIT:
