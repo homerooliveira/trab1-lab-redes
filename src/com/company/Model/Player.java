@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.SocketAddress;
 
 public class Player extends Thread {
     private Socket socket;
@@ -32,8 +33,12 @@ public class Player extends Thread {
 
     }
 
+    public SocketAddress getSocketAddress(){
+        return this.socket.getRemoteSocketAddress();
+    }
+
     public void startingGame(Game game) {
-        this._ActionGame(game, false);
+        this._ActionGame(game, true);
     }
     public boolean joiningGame(Game game) {
         if(game.playerY != null) return false;
@@ -43,7 +48,6 @@ public class Player extends Thread {
     private void _ActionGame(Game game, Boolean x) {
         this.game = game;
         this.x = x;
-
         if(x) this.game.playerX = this;
         else  this.game.playerY = this;
     }
@@ -98,52 +102,101 @@ public class Player extends Thread {
         }
     }
 
+    public void gameLogic() throws IOException, InterruptedException {
+        output.println(GameConstants.MESSAGE+"The Game is about to start...");
 
-    public void run(){
-        try{
-            output.println(GameConstants.MESSAGE+"The Game is about to start...");
+        if(this.x) {
+            this.awaitStart();
+            output.println(GameConstants.YOUR_TURN + "You are the X`s. It is your turn, move!");
+        }
+        else
+            output.println(GameConstants.MESSAGE+"You are the O`s. Wait for the other player`s turn...");
 
-            if(this.x)
-                output.println(GameConstants.YOUR_TURN+"You are the X`s. It is your turn, move!");
-            else
-                output.println(GameConstants.MESSAGE+"You are the O`s. Wait for the other player`s turn...");
+        String action;
+        int move;
+        while (true) {
+            action = input.readLine();
+            if(action == null) continue;
+            if(action.startsWith("6666")) {
+                output.println(GameConstants.YOU_WIN);
+                break;
+            }
 
-            String action;
-            int move;
-            while (true) {
-                action = input.readLine();
-                if(action == null) continue;
-
-                if(action.startsWith(GameConstants.MOVE)) {
-                    move = Integer.parseInt(action.substring(4));
-                    if(game.legalMove(move, this)){
-                        switch (game.result.getEnumResult()){
-                            case proceed:
-                                System.out.println("output: valid_moove");
-                                output.println(GameConstants.VALID_MOOVE);
-                                break;
-                            case win:
-                                System.out.println("output: you_win");
-                                output.println(GameConstants.VALID_MOOVE);
-                                output.println(GameConstants.YOU_WIN);
-                                break;
-                            case tie:
-                                System.out.println("output: you_tie");
-                                output.println(GameConstants.VALID_MOOVE);
-                                output.println(GameConstants.YOU_TIE);
-                                break;
-                        }
-                    } else {
-                        System.out.println("output: invalid_moove");
-                        output.println(GameConstants.INVALID_MOOVE + "Invalid Move!");
+            if(action.startsWith(GameConstants.MOVE)) {
+                move = Integer.parseInt(action.substring(4));
+                if(game.legalMove(move, this)){
+                    switch (game.result.getEnumResult()){
+                        case proceed:
+                            System.out.println("output: valid_moove");
+                            output.println(GameConstants.VALID_MOOVE);
+                            break;
+                        case win:
+                            System.out.println("output: you_win");
+                            output.println(GameConstants.VALID_MOOVE);
+                            output.println(GameConstants.YOU_WIN);
+                            break;
+                        case tie:
+                            System.out.println("output: you_tie");
+                            output.println(GameConstants.VALID_MOOVE);
+                            output.println(GameConstants.YOU_TIE);
+                            break;
                     }
+                } else {
+                    System.out.println("output: invalid_moove");
+                    output.println(GameConstants.INVALID_MOOVE + "Invalid Move!");
+                }
+            } else if(action.startsWith("QUIT")){
+                break;
+            }
+        }
+        this.game = null;
+    }
 
+    public void playerListener() throws IOException {
+            String action, name;
+            GameManager.addPlayer(this);
+            String response = this.input.readLine();
+            System.out.println("Player " + this.getSocketAddress() + " sent " + response);
+            if (response.length() > 4) {
+                action = response.substring(0, 4);
+                switch (action) {
+                    case GameConstants.CREATE_GAME:
+                        name = response.substring(4);
+                        if (GameManager.createGame(this.getSocketAddress(), name))
+                            this.getOutput().print(GameConstants.CREATE_GAME_OK);
+                        else
+                            this.getOutput().print(GameConstants.CREATE_GAME_ERROR);
+                        break;
 
-                } else if(action.startsWith("QUIT")){
-                    break;
+                    case GameConstants.JOIN_GAME:
+                        name = response.substring(4);
+                        if (GameManager.joinGame(this.getSocketAddress(), name))
+                            this.getOutput().print(GameConstants.JOIN_GAME_OK);
+                        else
+                            this.getOutput().print(GameConstants.JOIN_GAME_ERROR);
+                        break;
+
+                    case GameConstants.EXIT:
+                        GameManager._disconnect(this.getSocketAddress());
+                        break;
                 }
             }
 
+    }
+    public void run(){
+        try{
+            while (true) {
+                if (game == null)
+                    playerListener();
+                else
+                    try {
+                        gameLogic();
+                        this.game = null;
+                    } catch (Exception e){
+                        this.game = null;
+                        e.printStackTrace();
+                    }
+            }
         } catch (Exception e){
             e.printStackTrace();
         } finally {
@@ -155,4 +208,10 @@ public class Player extends Thread {
         }
     }
 
+    private synchronized void awaitStart() throws InterruptedException {
+        this.wait();
+    }
+    public synchronized void notifyStart() {
+        this.notify();
+    }
 }

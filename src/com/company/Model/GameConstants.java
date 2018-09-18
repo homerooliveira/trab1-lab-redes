@@ -1,6 +1,9 @@
 package com.company.Model;
 
 public class GameConstants {
+    public static final String OK = "0000";
+    public static final String ERROR = "1111";
+
     public static final String VALID_MOOVE = "0001";
     public static final String INVALID_MOOVE = "0002";
     public static final String OTHER_MOVED = "0003";

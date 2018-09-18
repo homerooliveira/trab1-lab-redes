@@ -15,24 +15,26 @@ public class GameManager {
     static HashMap<String, Game> games = new HashMap<>();
     static ConcurrentHashMap<SocketAddress, Player> players = new ConcurrentHashMap<SocketAddress, Player>();
     static Player player;
-    static String response;
-    static String action;
-    static String name;
 
     public static void start() throws IOException {
         int port = 9000;
         ServerSocket socket = new ServerSocket(port);
 
         System.out.println("The server is running at "+ port);
-
-        controller();
         cleanner();
         while (true){
             Socket _socket = socket.accept();
             Player player = new Player( _socket);
-            players.put(_socket.getRemoteSocketAddress(),player);
+            player.start();
+//            sendAvailableMachs(player);
+//            players.put(_socket.getRemoteSocketAddress(),player);
         }
     }
+
+    private static void sendAvailableMachs(Player player){
+        player.getOutput().println(GameConstants.LIST_GAME+getGamesJson());
+    }
+
     private static void cleanner(){
         System.out.println("setting up Cleaner");
         new Thread(()->{
@@ -46,15 +48,6 @@ public class GameManager {
         System.out.println("Server Cleaner set up");
     }
 
-    private static void controller(){
-        System.out.println("setting up Controller");
-        new Thread(()->{
-            while (true)
-                checkForActions();
-        }).start();
-        System.out.println("Controller set up");
-    }
-
     private static void checkForLostConnections() {
         for (SocketAddress socketAddress : players.keySet()) {
                 Player player = players.get(socketAddress);
@@ -66,42 +59,7 @@ public class GameManager {
         }
     }
 
-    private static void checkForActions() {
-        for (SocketAddress socketAddress: players.keySet()) {
-            try {
-                player = players.get(socketAddress);
-                response = player.getInput().readLine();
-                System.out.println("Player " + socketAddress + " sent " + response);
-                if (response.length() < 4) continue;
-                action = response.substring(0, 4);
-                switch (action) {
-                    case GameConstants.CREATE_GAME:
-                        name = response.substring(4);
-                        if(createGame(socketAddress))
-                            player.getOutput().print(GameConstants.CREATE_GAME_OK);
-                        else
-                            player.getOutput().print(GameConstants.CREATE_GAME_ERROR);
-                        break;
-
-                    case GameConstants.JOIN_GAME:
-                        name = response.substring(4);
-                        if(joinGame(socketAddress))
-                            player.getOutput().print(GameConstants.JOIN_GAME_OK);
-                        else
-                            player.getOutput().print(GameConstants.JOIN_GAME_ERROR);
-                        break;
-
-                    case GameConstants.EXIT:
-                        _disconnect(socketAddress);
-                        break;
-                }
-            } catch (Exception e){
-                _disconnect(socketAddress);
-            }
-        }
-    }
-
-    private static void _disconnect(SocketAddress socketAddress) {
+    public static void _disconnect(SocketAddress socketAddress) {
         Player player = players.remove(socketAddress);
         System.out.println("DISCONNECTED: "+ socketAddress);
         try {
@@ -111,16 +69,15 @@ public class GameManager {
         }
     }
 
-    private static boolean createGame(SocketAddress socketAddress) {
-        if(!games.containsKey(games)) {
+    public static boolean createGame(SocketAddress socketAddress, String name) {
+        if(!games.containsKey(name)) {
             Game game = new Game();
             games.put(name, game);
 
             Player player = players.remove(socketAddress);
             player.startingGame(game);
-            player.start();
             game.setCurrentPlayer(player);
-
+            player.getOutput().println(GameConstants.OK+"GAME CREATED, WAITING OTHER PLAYER");
             broadcastPlayers(GameConstants.LIST_GAME+getGamesJson());
             return true;
         } else {
@@ -128,13 +85,17 @@ public class GameManager {
         }
     }
 
-    private static boolean joinGame(SocketAddress socketAddress) {
+    public static boolean joinGame(SocketAddress socketAddress, String name) {
         Game game = games.remove(name);
         if(game != null){
             player = players.remove(socketAddress);
-            if(player.joiningGame(game)) return false;
-            player.start();
+            if(!player.joiningGame(game)) return false;
 
+            game.setCrossRelationPlayers();
+
+            player.notifyStart();
+            game.playerX.notifyStart();
+            player.getOutput().println(GameConstants.OK+"JOINED GAME");
             broadcastPlayers(GameConstants.LIST_GAME+getGamesJson());
             return true;
         }
@@ -147,8 +108,14 @@ public class GameManager {
     }
 
     public static void broadcastPlayers(String message){
+        System.out.println("Broadcasting\n"+message);
         for (Player player: players.values()) {
             player.getOutput().println(message);
         }
+    }
+
+    public static void addPlayer(Player player) {
+        sendAvailableMachs(player);
+        players.put(player.getSocketAddress(), player);
     }
 }

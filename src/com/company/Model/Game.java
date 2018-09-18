@@ -76,4 +76,9 @@ public class Game {
         }
         return false;
     }
+
+    public void setCrossRelationPlayers() {
+        this.playerX.setOtherPlayer(this.playerY);
+        this.playerY.setOtherPlayer(this.playerX);
+    }
 }
