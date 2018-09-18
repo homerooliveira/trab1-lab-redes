@@ -193,7 +193,6 @@ public class Client {
             if(response.length() < 4) continue;
             code = response.substring(0, 4);
             rest = response.substring(4); // might be null
-            System.out.println(code);
             switch (code){
                 case GameConstants.VALID_MOOVE:
                     print("I moved "+lastPlay + " " + this.playerType);
