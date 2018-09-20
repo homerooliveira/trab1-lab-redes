@@ -11,7 +11,9 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.Scanner;
 
-
+/**
+ * Implementacao do cliente
+ */
 public class Client {
     boolean debug = false;
 
@@ -37,13 +39,16 @@ public class Client {
         String server = "localhost";
         try {
             while (true){
-
-                if(!WantToPlay()) {
+                // Enquanto o jogador quiser jogar conecta-se ao servidor
+                if(!WantToPlay()) { // Pergunta ao jogador se quer jogar
                     System.out.println("GOOD BYE...\nSee you later alligator");
                     break;
                 }
+                //Conecta-se ao servidor através de um socket tcp
                 Client client = new Client(server);
+                //Busca/Cria uma partida
                 client.browseGames();
+                //Inicia o Jogo
                 client.play();
             }
         } catch (Exception e){
@@ -53,10 +58,28 @@ public class Client {
 
     }
 
+    /**
+     * Construtor da classe cliente que recebe apenas a localizaćao do servidor
+     * @param server
+     * @throws IOException
+     */
+    public Client(String server) throws IOException {
+        this.socket = new Socket(server, this.port);
+        in = new BufferedReader(new InputStreamReader(
+                socket.getInputStream()));
+        out = new PrintWriter(socket.getOutputStream(), true);
+
+        this.board = new char[9];
+    }
+
     private void browseGames() throws IOException {
 
         shouldListenServer = true;
         ok = false;
+
+        /**
+         * Thread que é responsável por escutar os inputs do jogador
+         */
         Thread inputListener = new Thread(()->{
             String opt;
             do {
@@ -90,6 +113,7 @@ public class Client {
         inputListener.start();
         String serverMsg, message, code;
 
+        //Tread responsável por escutar o servidor
         do {
             serverMsg= in.readLine();
             print("listening " + serverMsg);
@@ -124,6 +148,7 @@ public class Client {
                     break;
             }
             synchronized (this){
+                //Sincroniza as duas threads e avisa caso nao seja mais necessário escutar inputs do usuário
                 notify();
             }
         } while (shouldListenServer);
@@ -133,20 +158,27 @@ public class Client {
 
     }
 
+    /**
+     *  Seta se o jogador é X ou O
+     * @param type
+     */
     private void setPlayerType(char type) {
         this.playerType = type;
         this.otherPlayerType = type =='X' ? 'O' : 'X';
     }
 
+    /**
+     * Print para debug
+     * @param serverMsg
+     */
     private void print(String serverMsg) {
         if(debug == true)
             System.out.println("* DEBUG | " + serverMsg);
     }
 
-    private void listenToServer(){
-
-    }
-
+    /**
+     *     Questiona se o jogador quer jogar
+     */
     private static boolean WantToPlay() {
         Scanner keyboard = new Scanner(System.in);
         while (true) {
@@ -165,23 +197,16 @@ public class Client {
     }
 
 
-
-    public Client(String server) throws IOException {
-        this.socket = new Socket(server, this.port);
-        in = new BufferedReader(new InputStreamReader(
-                socket.getInputStream()));
-        out = new PrintWriter(socket.getOutputStream(), true);
-
-        this.board = new char[9];
-    }
-
-
+    /**
+     * Lógica do lado do cliente sobre a partida, apresenta comunicaćão com o servidor
+     * @throws IOException
+     */
     public void play() throws IOException {
-
         String response = in.readLine();
         String code;
         String rest;
         boolean endGame = false;
+        //Recebe a primeira mensagem do servidor dizedo que a partida se iniciará
         if(response.startsWith("WELCOME")){
             this.playerType = response.charAt(8);
             this.otherPlayerType = this.playerType == 'X' ? 'O' : 'X';
@@ -194,52 +219,51 @@ public class Client {
             code = response.substring(0, 4);
             rest = response.substring(4); // might be null
             switch (code){
-                case GameConstants.VALID_MOOVE:
-                    print("I moved "+lastPlay + " " + this.playerType);
-                    this.board[this.lastPlay] = this.playerType;
+                case GameConstants.VALID_MOOVE: // Caso quando o movimento feito foi válidado no servidor
+                    this.board[this.lastPlay] = this.playerType; // Altera tabuleiro local para ter o movimento feito
                     System.out.println("Wait for the other player`s turn");
                     printBoard();
                     break;
 
-                case GameConstants.INVALID_MOOVE:
+                case GameConstants.INVALID_MOOVE: // Caso quando o movimento feito foi inválidado no servidor
                     System.out.println("Are you trying to fool me? Try it again...");
                     System.out.println("Your Turn!");
                     printBoard();
                     myTurn();
                     break;
 
-                case GameConstants.OTHER_MOVED:
+                case GameConstants.OTHER_MOVED: // Caso quando o outro jogador fez um movimento
                     int i = Integer.parseInt(rest.trim());
                     print("OTHER moved "+i);
                     this.board[i] = this.otherPlayerType;
                     System.out.println("The other player moved");
                     break;
 
-                case GameConstants.YOUR_TURN:
+                case GameConstants.YOUR_TURN:// Caso quando é a vez do jogador
                     System.out.println(rest);
                     printBoard();
                     myTurn();
                     break;
 
-                case GameConstants.YOU_WIN:
+                case GameConstants.YOU_WIN: // Caso quando o jogador atual ganha a partida
                     System.out.println("YOU WIN");
                     endGame = true;
                     printBoard();
                     break;
 
-                case GameConstants.YOU_LOOSE:
+                case GameConstants.YOU_LOOSE: // Caso quando o jogador atual perde a partida
                     System.out.println("YOU LOOSE");
                     endGame = true;
                     printBoard();
                     break;
 
-                case GameConstants.YOU_TIE:
+                case GameConstants.YOU_TIE: // Caso quando há empate
                     System.out.println("BORRING... It`s a Tie...");
                     endGame = true;
                     printBoard();
                     break;
 
-                case GameConstants.MESSAGE:
+                case GameConstants.MESSAGE: // Caso genérico para que o servidor possa comunicar o jogador com mensagens simples
                     System.out.println(rest);
                     break;
             }
@@ -249,6 +273,10 @@ public class Client {
         }
     }
 
+    /**
+     * Turno do jogador atual
+     * espera-se que diga em que posićão deseja jogar
+     */
     private void myTurn() {
         int play;
         while (true) {
@@ -268,7 +296,9 @@ public class Client {
     }
 
 
-    // AUX
+    /**
+     * Método auxiliar para imprimir o tabuleiro
+     */
     public void printBoard(){
         if(debug) {
             String s = String.valueOf(board);

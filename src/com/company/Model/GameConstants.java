@@ -1,5 +1,10 @@
 package com.company.Model;
 
+
+/**
+ * Constantes usadas tanto no servidor quanto no cliente
+ * Para facilitar a comunicaćao
+ */
 public class GameConstants {
     public static final String OK = "0000";
     public static final String ERROR = "1111";

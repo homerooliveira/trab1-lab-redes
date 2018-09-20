@@ -9,13 +9,20 @@ import java.net.SocketAddress;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
+
+/**
+ * Gestor de Partidas
+ */
 public class GameManager {
     static Gson gson = new Gson();
-
     static HashMap<String, Game> games = new HashMap<>();
     static ConcurrentHashMap<SocketAddress, Player> players = new ConcurrentHashMap<SocketAddress, Player>();
     static Player player;
 
+    /**
+     * Inicializa gestor de partidas
+     * @throws IOException
+     */
     public static void start() throws IOException {
         int port = 9000;
         ServerSocket socket = new ServerSocket(port);
@@ -31,10 +38,17 @@ public class GameManager {
         }
     }
 
+    /**
+     * Envia Partidas Disponíveis para um jogador
+     * @param player
+     */
     private static void sendAvailableMachs(Player player){
         player.getOutput().println(GameConstants.LIST_GAME+getGamesJson());
     }
 
+    /**
+     * Responsável por fazer limpeza periódica sobre os jogadores inativos
+     */
     private static void cleanner(){
         System.out.println("setting up Cleaner");
         new Thread(()->{
@@ -48,6 +62,9 @@ public class GameManager {
         System.out.println("Server Cleaner set up");
     }
 
+    /**
+     * Checa por jogadores que perderam a conexão
+     */
     private static void checkForLostConnections() {
         for (SocketAddress socketAddress : players.keySet()) {
                 Player player = players.get(socketAddress);
@@ -59,6 +76,10 @@ public class GameManager {
         }
     }
 
+    /**
+     * Disconecta Jogador
+     * @param socketAddress
+     */
     public static void _disconnect(SocketAddress socketAddress) {
         Player player = players.remove(socketAddress);
         System.out.println("DISCONNECTED: "+ socketAddress);
@@ -69,6 +90,12 @@ public class GameManager {
         }
     }
 
+    /**
+     * Cria Partida para jogador
+     * @param socketAddress
+     * @param name
+     * @return
+     */
     public static boolean createGame(SocketAddress socketAddress, String name) {
         if(!games.containsKey(name)) {
             Game game = new Game();
@@ -77,8 +104,8 @@ public class GameManager {
             Player player = players.remove(socketAddress);
             player.startingGame(game);
             game.setCurrentPlayer(player);
-//            System.out.println(GameConstants.OK+"GAME CREATED, WAITING OTHER PLAYER");
-//            player.getOutput().println(GameConstants.OK+"GAME CREATED, WAITING OTHER PLAYER");
+
+
             broadcastPlayers(GameConstants.LIST_GAME+getGamesJson());
             return true;
         } else {
@@ -86,6 +113,12 @@ public class GameManager {
         }
     }
 
+    /**
+     * Jogador entra em uma pardita
+     * @param socketAddress
+     * @param name
+     * @return
+     */
     public static boolean joinGame(SocketAddress socketAddress, String name) {
         Game game = games.remove(name);
         if(game != null){
@@ -103,11 +136,19 @@ public class GameManager {
         return false;
     }
 
+    /**
+     * Cria Json com lista de partidas disponíveis
+     * @return
+     */
     private static String getGamesJson(){
         String games_string = gson.toJson(games.keySet());
         return  games_string;
     }
 
+    /**
+     * Envia mensagem para todos os jogadores que estào conectados e nao estào em nenhuma partida
+     * @param message
+     */
     public static void broadcastPlayers(String message){
         System.out.println("Broadcasting\n"+message);
         for (Player player: players.values()) {
@@ -115,6 +156,9 @@ public class GameManager {
         }
     }
 
+    /**
+     * Adiciona jogador a lista de Jogadores e envia partidas que ele pode entrar
+     */
     public static void addPlayer(Player player) {
         sendAvailableMachs(player);
         players.put(player.getSocketAddress(), player);

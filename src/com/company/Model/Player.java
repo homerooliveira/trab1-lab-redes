@@ -7,6 +7,12 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.SocketAddress;
 
+/**
+ * SERVIDOR
+ * Classe que armazena a lógica para cada jogador,
+ * desde a busca de uma partida a
+ * jogabilidade
+ */
 public class Player extends Thread {
     private Socket socket;
     private Boolean x;
@@ -16,6 +22,10 @@ public class Player extends Thread {
     BufferedReader input;
     PrintWriter output;
 
+    /**
+     * Inicializa o jogador atribuindo o seu socket e inicializando Streams para o input e output
+     * @param skt
+     */
     public Player(Socket skt){
         this.socket = skt;
         this.x = null;
@@ -33,18 +43,40 @@ public class Player extends Thread {
 
     }
 
+    /**
+     * Helper para obter o entrećo do socket que nesta implementaćao é único
+     * @return
+     */
     public SocketAddress getSocketAddress(){
         return this.socket.getRemoteSocketAddress();
     }
 
+    /**
+     * Inicializa/CRIA jogo
+     * @param game
+     */
     public void startingGame(Game game) {
         this._ActionGame(game, true);
     }
+
+    /**
+     * Jogador se junta a um jogo já pré existente
+     * @param game
+     * @return
+     */
     public boolean joiningGame(Game game) {
         if(game.playerY != null) return false;
         this._ActionGame(game, false);
         return true;
     }
+
+    /**
+     * Classe Genéria para inializaćão de jogo, tanto pata a criacao
+     * quanto para o jogador que quiser se jutar a um jogo
+     * já pre existente
+     * @param game
+     * @param x
+     */
     private void _ActionGame(Game game, Boolean x) {
         this.game = game;
         this.x = x;
@@ -52,10 +84,18 @@ public class Player extends Thread {
         else  this.game.playerY = this;
     }
 
+    /**
+     * Retorna o socket do jogador
+     * @return
+     */
     public Socket getSocket() {
         return socket;
     }
 
+    /**
+     * retorna o input do jogador BufferedReader
+     * @return
+     */
     public BufferedReader getInput() {
         return input;
     }
@@ -64,21 +104,44 @@ public class Player extends Thread {
         return output;
     }
 
+    /**
+     * retorna o output do jogador PrintWriter
+     * @return
+     */
     public Player getOther(){
         return this.other;
     }
+
+    /**
+     * Pega a marcacao do jogador atual X ou O
+     * @return
+     */
     public String getMark(){
         return this.x ? "X" : "O";
     }
+
+    /**
+     * Pega a marcacao do outro jogador  X ou O
+     * @return
+     */
     public String getOtherMark(){
         return !this.x ? "X" : "O";
     }
 
 
+    /**
+     * Adiciona a referencia para o jogador adversário
+     * @param other
+     */
     public void setOtherPlayer(Player other){
         this.other = other;
     }
 
+    /**
+     * lógica para quando o outro jogador moveu
+     * informa se houve empate derrota ou é sua vez
+     * @param position
+     */
     public void otherMoved(int position){
         output.println(GameConstants.MESSAGE + "The other player placed a " + getOtherMark() +" at "+ position);
         this.result = this.game.checkResult();
@@ -102,11 +165,16 @@ public class Player extends Thread {
         }
     }
 
+    /**
+     * lógica geral do jogo
+     * @throws IOException
+     * @throws InterruptedException
+     */
     public void gameLogic() throws IOException, InterruptedException {
         output.println(GameConstants.MESSAGE+"The Game is about to start...");
 
         if(this.x) {
-            this.awaitStart();
+            this.awaitStart(); // ESPERA PELO OUTRO JOGADOR
             output.println(GameConstants.YOUR_TURN + "You are the X`s. It is your turn, move!");
         }
         else
@@ -152,6 +220,11 @@ public class Player extends Thread {
         this.game = null;
     }
 
+    /**
+     * Escuta por input do jogador para criar/entrar partida
+     * ou sair do serivor
+     * @throws IOException
+     */
     public void playerListener() throws IOException {
             String action, name;
             GameManager.addPlayer(this);
@@ -183,13 +256,19 @@ public class Player extends Thread {
             }
 
     }
+
+    /**
+     * Método que roda a Thread
+     */
     public void run(){
         try{
             while (true) {
                 if (game == null)
+                    //ENQUANTO NAO ESTÄ E NENHUMA PARTIDA ESCUTA PELO JOGADOR PAR CRIAR PARTIDAS
                     playerListener();
                 else
                     try {
+                        //SE NAO JOGA
                         gameLogic();
                         this.game = null;
                     } catch (Exception e){
@@ -208,9 +287,18 @@ public class Player extends Thread {
         }
     }
 
+    /**
+     * Sincronizaćao da thread para início do jogo / ESPERA
+     * @throws InterruptedException
+     */
     private synchronized void awaitStart() throws InterruptedException {
         this.wait();
     }
+    /**
+     * Sincronizaćao da thread para inicio do jogo/
+     * caso Outro jogador entrou
+     * pode prosseguir
+     */
     public synchronized void notifyStart() {
         this.notify();
     }

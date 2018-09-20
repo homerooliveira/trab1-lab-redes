@@ -1,5 +1,8 @@
 package com.company.Model;
 
+/**
+ * Classe para ajudar a armazenar o resultado de uma partida
+ */
 public class Result {
     private EnumResult enumResult;
     private Player winner;
